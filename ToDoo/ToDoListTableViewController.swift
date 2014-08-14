@@ -7,11 +7,12 @@
 //
 
 import UIKit
-//import "AddToDoItemViewController"
 
 class ToDoListTableViewController: UITableViewController {
 
     var toDoItems:[ToDoItem] = [ToDoItem]()
+    
+    @IBOutlet weak var loginButton: UIButton!
     
     func loadInitialData() {
         var item1 = ToDoItem(itemName: "Buy milk")
@@ -23,6 +24,30 @@ class ToDoListTableViewController: UITableViewController {
         var item3 = ToDoItem(itemName: "Read a book")
         toDoItems.append(item3)
     }
+    
+    @IBAction func login(sender: AnyObject) {
+        FBLoginView.self
+        
+//        self.view.addSubview(loginView)
+    }
+    
+//    func login() {
+//        let credentialsProvider = AWSStaticCredentialsProvider.credentialsWithAccessKey(yourAccessKey, secretKey: yourSecretKey)
+//        let defaultServiceConfiguration = AWSServiceConfiguration(region: AWSRegionType.USEast1, credentialsProvider: credentialsProvider)
+//        AWSServiceManager.defaultServiceManager().setDefaultServiceConfiguration(defaultServiceConfiguration)
+//        
+//        AWSCognitoCredentialsProvider *credentialsProvider =
+//            [AWSCognitoCredentialsProvider credentialsWithRegionType:AWSRegionUSEast1
+//                accountId:@"XXXXXXXXXXXX"
+//        identityPoolId:@"us-east-1:XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXX"
+//        unauthRoleArn:@"arn:aws:iam::XXXXXXXXXX:role/YourUnauthRoleName"
+//        authRoleArn:@"arn:aws:iam::XXXXXXXXXX:role/YourAuthRoleName"];
+//        
+//        AWSServiceConfiguration *configuration = [AWSServiceConfiguration configurationWithRegion:AWSRegionUSEast1
+//        credentialsProvider:credentialsProvider];
+//        
+//        [AWSServiceManager defaultServiceManager].defaultServiceConfiguration = configuration;
+//    }
     
     override func viewDidLoad() {
         super.viewDidLoad()

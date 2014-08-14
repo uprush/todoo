@@ -259,12 +259,27 @@
                         </connections>
                     </tableView>
                     <navigationItem key="navigationItem" title="My To-Do List" id="LgQ-5z-lRv">
+                        <barButtonItem key="leftBarButtonItem" style="plain" id="0gk-fY-owH">
+                            <button key="customView" opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" id="VXe-Dt-0gM">
+                                <rect key="frame" x="-23" y="-15" width="133" height="30"/>
+                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                <state key="normal" title="Login">
+                                    <color key="titleShadowColor" white="0.5" alpha="1" colorSpace="calibratedWhite"/>
+                                </state>
+                                <connections>
+                                    <action selector="login:" destination="QSw-1M-7cv" eventType="touchDown" id="0Fs-pj-UuI"/>
+                                </connections>
+                            </button>
+                        </barButtonItem>
                         <barButtonItem key="rightBarButtonItem" systemItem="add" id="qHx-UC-EoJ">
                             <connections>
                                 <segue destination="TrP-YW-6LO" kind="presentation" id="jkz-tZ-hRw"/>
                             </connections>
                         </barButtonItem>
                     </navigationItem>
+                    <connections>
+                        <outlet property="loginButton" destination="VXe-Dt-0gM" id="rHj-tl-kx1"/>
+                    </connections>
                 </tableViewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="TIh-i5-OM5" userLabel="First Responder" sceneMemberID="firstResponder"/>
             </objects>

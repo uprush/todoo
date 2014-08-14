@@ -28,6 +28,19 @@
 	<array>
 		<string>armv7</string>
 	</array>
+	<key>FacebookAppID</key>
+	<string>270909779729239</string>
+	<key>FacebookDisplayName</key>
+	<string>ToDoo</string>
+	<key> URL types</key>
+	<array>
+		<dict>
+			<key>URL Schemes</key>
+			<array/>
+			<key>Item 0</key>
+			<string>fb270909779729239</string>
+		</dict>
+	</array>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
