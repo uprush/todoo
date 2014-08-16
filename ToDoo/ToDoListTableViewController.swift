@@ -8,46 +8,162 @@
 
 import UIKit
 
-class ToDoListTableViewController: UITableViewController {
+class ToDoListTableViewController: UITableViewController, FBLoginViewDelegate {
+    
+    let AWS_ACCOUNT = "your-aws-account-id"
+    let COGNITO_IDENTITY_POOL = "your-cognito-identity-pool-id"
+    let UNAUTH_ROLE_ARN = "cognito-unauth-role-arn"
+    let AUTH_ROLE_ARN = "cognito-auth-role-arn"
+    
 
     var toDoItems:[ToDoItem] = [ToDoItem]()
+    var syncClient: AWSCognito!
+//    var syncClient = AWSCognito.defaultCognito()
     
     @IBOutlet weak var loginButton: UIButton!
+    @IBOutlet var fbLoginView : FBLoginView!
+    
     
     func loadInitialData() {
-        var item1 = ToDoItem(itemName: "Buy milk")
-        toDoItems.append(item1)
-        
-        var item2 = ToDoItem(itemName: "Buy eggs")
-        toDoItems.append(item2)
-
-        var item3 = ToDoItem(itemName: "Read a book")
-        toDoItems.append(item3)
+//        var item1 = ToDoItem(itemName: "Buy milk")
+//        toDoItems.append(item1)
+//        
+//        var item2 = ToDoItem(itemName: "Buy eggs")
+//        toDoItems.append(item2)
+//
+//        var item3 = ToDoItem(itemName: "Read a book")
+//        toDoItems.append(item3)
     }
     
     @IBAction func login(sender: AnyObject) {
-        FBLoginView.self
+        var buttonTitle = loginButton.titleLabel.text
         
-//        self.view.addSubview(loginView)
+        if buttonTitle == "Login" {
+            fbLoginView = FBLoginView()
+            fbLoginView.frame = CGRectOffset(fbLoginView.frame, (self.view.center.x - (fbLoginView.frame.size.width / 2)), 5);
+            fbLoginView.delegate = self
+            fbLoginView.readPermissions = ["public_profile", "email", "user_friends"]
+            
+            self.view.addSubview(fbLoginView)
+            
+        } else {
+            FBSession.activeSession().closeAndClearTokenInformation()
+        }
+        
+    }
+
+    func syncData() {
+        println("Syncing data...")
+        toDoItems.removeAll(keepCapacity: true)
+        
+        // sync data from Cognito
+        if syncClient == nil {
+            syncClient = AWSCognito.defaultCognito()
+        }
+        var dataset = syncClient.openOrCreateDataset("myDataSet")
+        
+//        dataset.clear() // for test only
+        dataset.synchronize()
+        
+        if dataset.size() != 0 {
+            var items: Dictionary = dataset.getAll()
+            for (id, itemJson) in items {
+                //                println("\(id): \(itemJson)")
+                //                let itemJson:String = items[i].value
+                //                println(itemJson)
+                
+                let data:NSData = itemJson.dataUsingEncoding(NSUTF8StringEncoding, allowLossyConversion: false)!
+                let jsonObject : AnyObject! = NSJSONSerialization.JSONObjectWithData(data, options: NSJSONReadingOptions.MutableContainers, error: nil)
+                
+                if let nsDictionaryObject = jsonObject as? NSDictionary {
+                    if let swiftDictionary = nsDictionaryObject as Dictionary? {
+                        //                        println(swiftDictionary)
+                        //                        for (key, value) in swiftDictionary {
+                        //                            println(key)
+                        //                            println(value.description)
+                        //                        }
+                        var name:String = swiftDictionary["item_name"]!.description
+                        var item = ToDoItem(itemName: name)
+                        toDoItems.append(item)
+                    }
+                }
+                else if let nsArrayObject = jsonObject as? NSArray {
+                    if let swiftArray = nsArrayObject as Array? {
+                        println(swiftArray)
+                    }
+                }
+            }
+            tableView.reloadData()
+        }
+        
     }
     
-//    func login() {
-//        let credentialsProvider = AWSStaticCredentialsProvider.credentialsWithAccessKey(yourAccessKey, secretKey: yourSecretKey)
-//        let defaultServiceConfiguration = AWSServiceConfiguration(region: AWSRegionType.USEast1, credentialsProvider: credentialsProvider)
-//        AWSServiceManager.defaultServiceManager().setDefaultServiceConfiguration(defaultServiceConfiguration)
-//        
-//        AWSCognitoCredentialsProvider *credentialsProvider =
-//            [AWSCognitoCredentialsProvider credentialsWithRegionType:AWSRegionUSEast1
-//                accountId:@"XXXXXXXXXXXX"
-//        identityPoolId:@"us-east-1:XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXX"
-//        unauthRoleArn:@"arn:aws:iam::XXXXXXXXXX:role/YourUnauthRoleName"
-//        authRoleArn:@"arn:aws:iam::XXXXXXXXXX:role/YourAuthRoleName"];
-//        
-//        AWSServiceConfiguration *configuration = [AWSServiceConfiguration configurationWithRegion:AWSRegionUSEast1
-//        credentialsProvider:credentialsProvider];
-//        
-//        [AWSServiceManager defaultServiceManager].defaultServiceConfiguration = configuration;
-//    }
+    // Facebook Delegate Methods
+    
+    func loginViewShowingLoggedInUser(loginView : FBLoginView!) {
+        println("User Logged In")
+        
+        // AWS credentials with FB login
+        var token = FBSession.activeSession().accessTokenData.accessToken
+        var tokens: Dictionary<NSNumber , String> = [AWSCognitoLoginProviderKey.Facebook.toRaw() : token]
+        
+        var credentialsProvider = AWSCognitoCredentialsProvider.credentialsWithRegionType(AWSRegionType.USEast1, accountId: AWS_ACCOUNT, identityPoolId: COGNITO_IDENTITY_POOL, unauthRoleArn: UNAUTH_ROLE_ARN, authRoleArn: AUTH_ROLE_ARN, logins: tokens)
+        
+        var configuration = AWSServiceConfiguration(region: AWSRegionType.USEast1, credentialsProvider: credentialsProvider)
+        AWSServiceManager.defaultServiceManager().setDefaultServiceConfiguration(configuration)
+        
+        
+        // Retrieve your cognito ID.
+        var cognitoId = credentialsProvider.getIdentityId().continueWithBlock {
+            (task: BFTask!) -> NSString in
+            if task.isCancelled() {
+                // the task is cancelled
+                println("task cancelled")
+                return ""
+                
+            } else if task.error() {
+                // the task failed
+                println("task error")
+                return ""
+            } else {
+                var id = credentialsProvider.identityId
+                println("got cognitoid: \(id)")
+                println()
+                return id
+            }
+        }
+    
+        syncData()
+        
+        fbLoginView.removeFromSuperview()
+        loginButton.setTitle("Logout", forState: UIControlState.Normal)
+    }
+    
+    func loginViewFetchedUserInfo(loginView : FBLoginView!, user: FBGraphUser) {
+        println("User: \(user)")
+        println("User ID: \(user.objectID)")
+        println("User Name: \(user.name)")
+        var userEmail = user.objectForKey("email") as String
+        println("User Email: \(userEmail)")
+
+    }
+    
+    func loginViewShowingLoggedOutUser(loginView : FBLoginView!) {
+        println("User Logged Out")
+        loginButton.setTitle("Login", forState: UIControlState.Normal)
+    }
+    
+    func loginView(loginView : FBLoginView!, handleError:NSError) {
+        println("Error: \(handleError.localizedDescription)")
+    }
+
+    // TODO: this method doesn't get called
+    func application(application: UIApplication, openURL url: NSURL, sourceApplication: NSString?, annotation: AnyObject) -> Bool {
+        var wasHandled:Bool = FBAppCall.handleOpenURL(url, sourceApplication: sourceApplication)
+        println ("hoge=======")
+        return wasHandled
+    }
+    
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -104,12 +220,15 @@ class ToDoListTableViewController: UITableViewController {
     
 
     @IBAction func unwindToList(segue: UIStoryboardSegue) {
+        // sync data from cloud
 //        var source: AddToDoItemViewController = segue.sourceViewController as AddToDoItemViewController
 //        if source.toDoItem != nil {
 //            var item = source.toDoItem as ToDoItem
 //            toDoItems.append(item)
 //            tableView.reloadData()
 //        }
+        println("hoshofhosd~~~~~~~~~")
+        syncData()
     }
     
     /*
@@ -147,14 +266,13 @@ class ToDoListTableViewController: UITableViewController {
     }
     */
 
-    /*
     // MARK: - Navigation
 
     // In a storyboard-based application, you will often want to do a little preparation before navigation
     override func prepareForSegue(segue: UIStoryboardSegue!, sender: AnyObject!) {
         // Get the new view controller using [segue destinationViewController].
         // Pass the selected object to the new view controller.
+//        syncData()
     }
-    */
 
 }

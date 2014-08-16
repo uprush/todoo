@@ -9,7 +9,8 @@
 #ifndef ToDoo_ToDo_Bridging_Header_h
 #define ToDoo_ToDo_Bridging_Header_h
 
-//#import <AWSiOSSDK/AWSCore.h>
+#import <AWSiOSSDKv2/AWSCore.h>
+#import <AWSCognitoSync/Cognito.h>
 #import <FacebookSDK/FacebookSDK.h>
 
 #endif

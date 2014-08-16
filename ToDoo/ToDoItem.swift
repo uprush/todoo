@@ -12,8 +12,11 @@ class ToDoItem : NSObject {
     var itemName: String = ""
     var completed: Bool = false
     var creationDate: NSDate = NSDate()
+    var id: CFStringRef
     
     init(itemName: String) {
         self.itemName = itemName
+        var uuid: CFUUIDRef = CFUUIDCreate(nil)
+        id = CFUUIDCreateString(nil, uuid)
     }
 }
